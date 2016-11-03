@@ -8,6 +8,7 @@ import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -15,7 +16,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 
 
-public class GameActivity extends Activity {
+public class GameActivity extends Activity implements GestureDetector.OnGestureListener{
 
     private GestureDetector aGesture;
 
@@ -78,6 +79,9 @@ public class GameActivity extends Activity {
         winsTextView.setText(resources.getString(R.string.win) + wins);
         lossesTextView.setText(resources.getString(R.string.losses) + losses);
 
+        // the gesture detector
+        aGesture = new GestureDetector(this, this);
+
         startNewGame();
     }
 
@@ -118,6 +122,8 @@ public class GameActivity extends Activity {
                     exitImageView.setY(row* SQUARE + OFFSET);
                     activityGameRelativeLayout.addView(exitImageView);
                     visualObjects.add(exitImageView);
+                    exitRow = row;
+                    exitCol = colm;
                 }
             }
         }
@@ -131,7 +137,7 @@ public class GameActivity extends Activity {
         int row = 5;
         int colm = 5;
 
-        Zombie zombie = new Zombie();
+        zombie = new Zombie();
         zombie.setRow(row);
         zombie.setCol(colm);
 
@@ -155,7 +161,7 @@ public class GameActivity extends Activity {
         int row = 1;
         int colm  = 1;
 
-        Player player = new Player();
+        player = new Player();
         player.setRow(row);
         player.setCol(colm);
 
@@ -170,6 +176,12 @@ public class GameActivity extends Activity {
     }
 
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+       return aGesture.onTouchEvent(event);
+
+
+    }
 
     private void movePlayer(float velocityX, float velocityY) {
         // TODO: This method gets called in the onFling event
@@ -179,6 +191,49 @@ public class GameActivity extends Activity {
         // TODO: If y is negative, move player down.  Else if y is positive, move player up.
 
         // TODO: Then move the zombie, using the player's row and column position.
+
+        String direction = "";
+
+        //Decide if x or y is bigger
+        if (Math.abs(velocityX) > Math.abs(velocityY))
+        {
+            //X is larger its either gonna move left or right
+            if(velocityX < -FLING_THRESHOLD)
+                direction = "LEFT";
+            else if (velocityX > FLING_THRESHOLD)
+                direction = "RIGHT";
+
+        }
+        else
+        {
+            if(velocityY < -FLING_THRESHOLD)
+                direction = "DOWN";
+            else if (velocityY > FLING_THRESHOLD)
+                direction = "UP";
+        }
+        //only move the player if direction is not empty
+        if(!direction.equals("")) {
+            player.move(gameBoard, direction);
+            playerImageView.setX(player.getCol() * SQUARE + OFFSET);
+            playerImageView.setY(player.getRow() * SQUARE + OFFSET);
+        }
+        //move zombie no matter what
+        zombie.move(gameBoard, player.getCol(), player.getRow());
+        zombieImageView.setX(zombie.getCol() * SQUARE + OFFSET);
+        zombieImageView.setY(zombie.getRow() * SQUARE + OFFSET);
+
+        //determin if player wins
+        if(player.getRow() == exitRow && player.getCol() == exitCol)
+        {
+            winsTextView.setText(resources.getString(R.string.win) + (++wins));
+        }
+        else
+        {
+            lossesTextView.setText(resources.getString(R.string.losses) + (++losses));
+        }
+
+        if(player.getCol() == zombie.getCol() && player.getRow() == zombie.getRow())
+            startNewGame();
     }
 
 
@@ -200,5 +255,36 @@ public class GameActivity extends Activity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean onDown(MotionEvent motionEvent) {
+        return false;
+    }
+
+    @Override
+    public void onShowPress(MotionEvent motionEvent) {
+
+    }
+
+    @Override
+    public boolean onSingleTapUp(MotionEvent motionEvent) {
+        return false;
+    }
+
+    @Override
+    public boolean onScroll(MotionEvent motionEvent, MotionEvent motionEvent1, float v, float v1) {
+        return false;
+    }
+
+    @Override
+    public void onLongPress(MotionEvent motionEvent) {
+
+    }
+
+    @Override
+    public boolean onFling(MotionEvent motionEvent, MotionEvent motionEvent1, float v, float v1) {
+        movePlayer(v, v1);
+        return false;
     }
 }
